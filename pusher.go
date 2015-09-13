@@ -11,8 +11,7 @@ import (
 func main() {
 	socket, err := NewPusher("de504dc5763aeef9ff52")
 	subscription := socket.Subscribe("order_book")
-	eventChannel := make(chan *Event)
-	subscription.Bind("data", func(e *Event) { eventChannel <- e })
+	eventChannel := subscription.Bind("data")
 	if err != nil {
 		fmt.Println("issues")
 	}
