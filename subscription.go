@@ -15,7 +15,18 @@ func (s *Subscription) Bind(eventName string) chan *Event {
 	return s.bindings[eventName]
 }
 
+func (s *Subscription) Unbind(eventName string) error {
+	if s.bindings[eventName] {
+		delete(s.bindings, eventName)
+		log.Notice("Unbound from event " + eventName + ".")
+		return nil
+	} else {
+		return error("This event binding does not exist")
+	}
+}
+
 func (s *Subscription) listen() {
+	log.Info("Listening for events on channel \"" + s.Name + "\"")
 	for {
 		e := <-s.channel
 		if s.bindings[e.Event] != nil {

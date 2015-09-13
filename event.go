@@ -5,12 +5,13 @@
 package main
 
 const (
-	PUSHER_ERROR                  = "pusher:error"
-	PUSHER_CONNECTION_ESTABLISHED = "pusher:connection_established"
-	PUSHER_PING_EVENT             = "pusher:ping"
-	PUSHER_PONG_EVENT             = "pusher:pong"
-	PUSHER_PING_EVENT_PAYLOAD     = `{"event":"pusher:ping","data":"{}"}`
-	PUSHER_PONG_EVENT_PAYLOAD     = `{"event":"pusher:pong","data":"{}"}`
+	PING_EVENT                          = "pusher:ping"
+	PONG_EVENT                          = "pusher:pong"
+	PING_EVENT_PAYLOAD                  = `{"event":"pusher:ping","data":"{}"}`
+	PONG_EVENT_PAYLOAD                  = `{"event":"pusher:pong","data":"{}"}`
+	PUSHER_CONNECTION_ESTABLISHED_EVENT = "pusher:connection_established"
+	PUSHER_SUBSCRIBE_EVENT              = "pusher:subscribe"
+	PUSHER_ERROR_EVENT                  = "pusher:error"
 )
 
 type Event struct {

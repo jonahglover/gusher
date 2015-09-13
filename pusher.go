@@ -6,13 +6,13 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"golang.org/x/net/websocket"
 	"time"
 )
 
 const (
-	HEARTBEAT_INTERVAL = 10 // time to wait in between heartbeats
 	// [scheme]://ws.pusherapp.com:[port]/app/[key]
 	WS_SCHEME         = "ws"
 	WSS_SCHEME        = "wss"
@@ -25,30 +25,37 @@ const (
 	ORIGIN            = "http://localhost/"
 )
 
-// concepts of different types of clients
 type Pusher struct {
-	ws            *websocket.Conn
-	subscriptions map[string]*Subscription
+	ws              *websocket.Conn
+	subscriptions   map[string]*Subscription
+	ActivityTimeout float64
+	SocketID        string
 }
 
-func (c *Pusher) Heartbeat() {
+func (c *Pusher) heartbeat() {
+	log.Info("Starting Heartbeat")
+	log.Info("Sending Ping every " + fmt.Sprintf("%.6f", c.ActivityTimeout) + " seconds.")
 	for {
-		websocket.Message.Send(c.ws, PUSHER_PING_EVENT_PAYLOAD)
-		time.Sleep(HEARTBEAT_INTERVAL * time.Second)
+		websocket.Message.Send(c.ws, PING_EVENT_PAYLOAD)
+		time.Sleep(time.Duration(c.ActivityTimeout) * time.Second)
 	}
 }
 
-func (c *Pusher) Listen() {
+func (c *Pusher) listen() {
+	log.Info("Listening for events from Pusher")
 	for {
 		var event Event
 		err := websocket.JSON.Receive(c.ws, &event)
 		if err != nil {
 		} else {
 			switch event.Event {
-			case PUSHER_PING_EVENT:
-				websocket.Message.Send(c.ws, PUSHER_PONG_EVENT_PAYLOAD)
-			case PUSHER_PONG_EVENT:
+			case PING_EVENT:
+				websocket.Message.Send(c.ws, PONG_EVENT_PAYLOAD)
+			case PONG_EVENT:
 			default:
+				if err != nil {
+					log.Error("Could not read Channel Event from websocket")
+				}
 				c.subscriptions[event.Channel].channel <- &event
 			}
 		}
@@ -92,14 +99,24 @@ func NewPusher(key string) (*Pusher, error) {
 	}
 
 	switch event.Event {
-	case PUSHER_ERROR:
-		// TODO
-		fmt.Println("pusher error")
-	case PUSHER_CONNECTION_ESTABLISHED:
-		c := Pusher{ws: ws, subscriptions: make(map[string]*Subscription)}
-		go c.Heartbeat()
-		go c.Listen()
+	case PUSHER_ERROR_EVENT:
+		if err != nil {
+			return nil, err
+		}
+		log.Error(event.Data)
+	case PUSHER_CONNECTION_ESTABLISHED_EVENT:
+		log.Info("Connection Established")
+		var event Event
+		err = json.Unmarshal(res[0:msgLength], &event)
+		if err != nil {
+			return nil, err
+		}
+		var data map[string]interface{}
+		json.Unmarshal([]byte(event.Data), &data)
+		c := Pusher{ws: ws, subscriptions: make(map[string]*Subscription), ActivityTimeout: data["activity_timeout"].(float64), SocketID: data["socket_id"].(string)}
+		go c.heartbeat()
+		go c.listen()
 		return &c, nil
 	}
-	return nil, nil
+	return nil, errors.New("Received unknown event from Pusher.")
 }
