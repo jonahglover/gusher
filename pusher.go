@@ -76,12 +76,8 @@ func (c *Pusher) serve() error {
 }
 
 func (c *Pusher) Subscribe(name string) *Subscription {
-	// TODO use constant
-	err := websocket.Message.Send(c.ws, fmt.Sprintf(`{"event":"pusher:subscribe","data":{"channel":"%s"}}`, name))
-	if err != nil {
-		return nil
-	}
-
+	subscribeEvent := &Event{Event: PUSHER_SUBSCRIBE_EVENT, Data: fmt.Sprintf(`{"channel":"%s"}`, name)}
+	c.sendEvent(subscribeEvent)
 	// looks like there was no error. lets add this subscription :D
 	c.subscriptions[name] = NewSubscription(name)
 	return c.subscriptions[name]
@@ -94,7 +90,6 @@ func (c *Pusher) Unsubscribe(name string) error {
 	}
 
 	unsubscribeEvent := &Event{Event: PUSHER_UNSUBSCRIBE_EVENT, Data: fmt.Sprintf(`{"channel":"%s"}`, name)}
-	fmt.Println(unsubscribeEvent.Encode())
 	c.sendEvent(unsubscribeEvent)
 
 	subscription.Unsubscribe()

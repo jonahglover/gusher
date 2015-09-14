@@ -15,6 +15,7 @@ type Subscription struct {
 }
 
 func (s *Subscription) Bind(eventName string) chan *Event {
+	log.Info("Binding to event \"" + eventName + "\" on channel \"" + s.Name + "\"")
 	s.bindings[eventName] = make(chan *Event)
 	return s.bindings[eventName]
 }
@@ -34,14 +35,13 @@ func (s *Subscription) listen() {
 	for {
 		e := <-s.channel
 		if e.Event == INTERNAL_UNSUBSCRIBE_EVENT {
-			log.Info("hmm")
+			log.Info("Stop listening for events on channel \"" + s.Name + "\"")
 			break
 		}
 		if s.bindings[e.Event] != nil {
 			s.bindings[e.Event] <- e
 		}
 	}
-	log.Info("Stop listening for events on channel \"" + s.Name + "\"")
 }
 
 func (s *Subscription) Unsubscribe() {

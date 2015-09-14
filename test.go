@@ -18,15 +18,6 @@ func main() {
 	for {
 		ev := <-eventChannel
 		fmt.Println(ev.Data)
-		socket.Unsubscribe("order_book")
-		break
-	}
-
-	newSubscription := socket.Subscribe("order_book")
-	newEventChannel := newSubscription.Bind("data")
-	for {
-		ev := <-newEventChannel
-		fmt.Println(ev.Data)
 	}
 
 }
