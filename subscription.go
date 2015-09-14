@@ -4,6 +4,10 @@
 
 package main
 
+import (
+	"errors"
+)
+
 type Subscription struct {
 	Name     string
 	channel  chan *Event
@@ -16,12 +20,12 @@ func (s *Subscription) Bind(eventName string) chan *Event {
 }
 
 func (s *Subscription) Unbind(eventName string) error {
-	if s.bindings[eventName] {
+	if s.bindings[eventName] != nil {
 		delete(s.bindings, eventName)
 		log.Notice("Unbound from event " + eventName + ".")
 		return nil
 	} else {
-		return error("This event binding does not exist")
+		return errors.New("This event binding does not exist")
 	}
 }
 

@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	socket, err := NewPusher("de504dc5763aeef9ff52")
+	socket, err := NewPusher("de504dc5763aeef9ff52", Scheme("WSS"), ProtocolVersion("7"))
 	subscription := socket.Subscribe("order_book")
 	eventChannel := subscription.Bind("data")
 	if err != nil {

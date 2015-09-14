@@ -12,24 +12,16 @@ import (
 	"time"
 )
 
-const (
-	// [scheme]://ws.pusherapp.com:[port]/app/[key]
-	WS_SCHEME         = "ws"
-	WSS_SCHEME        = "wss"
-	PUSHER_HOST       = "ws.pusherapp.com"
-	APP               = "APP"
-	WS_PORT           = "80"
-	WSS_PORT          = "443"
-	MAX_MESSAGE_BYTES = 10000 // max message size for pusher is 10kB http://www.quora.com/What-is-the-maximum-message-size-for-Pusher-1
-	PROTOCOL_VERSION  = "7"
-	ORIGIN            = "http://localhost/"
-)
-
 type Pusher struct {
 	ws              *websocket.Conn
 	subscriptions   map[string]*Subscription
 	ActivityTimeout float64
 	SocketID        string
+	scheme          string
+	host            string
+	appKey          string
+	protocolVersion string
+	pusherHost      string
 }
 
 func (c *Pusher) heartbeat() {
@@ -74,9 +66,19 @@ func (c *Pusher) Subscribe(name string) *Subscription {
 	return c.subscriptions[name]
 }
 
-// TODO give this options pertaining to the type of client
-func NewPusher(key string) (*Pusher, error) {
-	url := WSS_SCHEME + "://" + PUSHER_HOST + "/app/" + key + "?protocol=" + PROTOCOL_VERSION
+func NewPusher(key string, options ...func(*Pusher) error) (*Pusher, error) {
+
+	p := Pusher{scheme: WSS_SCHEME, pusherHost: PUSHER_HOST, appKey: key, protocolVersion: PROTOCOL_VERSION}
+
+	// process options
+
+	for _, option := range options {
+		option(&p)
+	}
+
+	// set URL
+
+	url := p.scheme + "://" + p.pusherHost + "/app/" + p.appKey + "?protocol=" + p.protocolVersion
 
 	// Attempt to Establish Connection wuth Pusher
 	ws, err := websocket.Dial(url, "", ORIGIN)
