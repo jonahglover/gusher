@@ -33,10 +33,20 @@ func (s *Subscription) listen() {
 	log.Info("Listening for events on channel \"" + s.Name + "\"")
 	for {
 		e := <-s.channel
+		if e.Event == INTERNAL_UNSUBSCRIBE_EVENT {
+			log.Info("hmm")
+			break
+		}
 		if s.bindings[e.Event] != nil {
 			s.bindings[e.Event] <- e
 		}
 	}
+	log.Info("Stop listening for events on channel \"" + s.Name + "\"")
+}
+
+func (s *Subscription) Unsubscribe() {
+	log.Info("Unsubscribing from \"" + s.Name + "\"")
+	s.channel <- &Event{Event: INTERNAL_UNSUBSCRIBE_EVENT}
 }
 
 func NewSubscription(name string) *Subscription {
