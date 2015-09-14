@@ -6,15 +6,35 @@ package main
 
 import (
 	"errors"
+	"time"
+)
+
+const (
+	BIND_TIMEOUT = 10
 )
 
 type Subscription struct {
-	Name     string
-	channel  chan *Event
-	bindings map[string]chan *Event
+	Name      string
+	channel   chan *Event
+	bindings  map[string]chan *Event
+	readyChan chan bool
+	Ready     bool
 }
 
 func (s *Subscription) Bind(eventName string) chan *Event {
+	if !s.Ready {
+		timeout := make(chan bool, 1)
+		go func() {
+			time.Sleep(BIND_TIMEOUT * time.Second)
+			timeout <- true
+		}()
+		select {
+		case <-s.readyChan:
+			log.Info("Client now ready to bind")
+		case <-timeout:
+			return nil
+		}
+	}
 	log.Info("Binding to event \"" + eventName + "\" on channel \"" + s.Name + "\"")
 	s.bindings[eventName] = make(chan *Event)
 	return s.bindings[eventName]
@@ -31,6 +51,8 @@ func (s *Subscription) Unbind(eventName string) error {
 }
 
 func (s *Subscription) listen() {
+	s.Ready = true
+	s.readyChan <- s.Ready
 	log.Info("Listening for events on channel \"" + s.Name + "\"")
 	for {
 		e := <-s.channel
@@ -50,7 +72,7 @@ func (s *Subscription) Unsubscribe() {
 }
 
 func NewSubscription(name string) *Subscription {
-	s := &Subscription{Name: name, channel: make(chan *Event), bindings: make(map[string]chan *Event)}
+	s := &Subscription{Name: name, channel: make(chan *Event), bindings: make(map[string]chan *Event), Ready: false, readyChan: make(chan bool, 1)}
 	go s.listen()
 	return s
 }
