@@ -1,4 +1,4 @@
-package main
+package gusher
 
 import (
 	"github.com/op/go-logging"
